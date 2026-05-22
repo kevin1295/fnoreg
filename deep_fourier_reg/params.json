@@ -8,7 +8,7 @@
   "patch_size": [
     256
   ],
-  "model_name": "fouriernet",
+  "model_name": "convfno",
   "model_config": [
     {
       "ffcunet": {
@@ -56,7 +56,7 @@
         "factorization": "tucker",
         "rank": 0.42
       },
-      "fnoreg": {
+      "convfno": {
         "n_modes": [
           64,
           64
@@ -69,6 +69,21 @@
         "factorization": "tucker",
         "rank": 0.42,
         "alpha": 1
+      },
+      "gated_convfno": {
+        "n_modes": [
+          64,
+          64
+        ],
+        "in_channels": 2,
+        "out_channels": 2,
+        "hidden_channels": 32,
+        "projection_channels": 64,
+        "n_layers": 12,
+        "factorization": "tucker",
+        "rank": 0.42,
+        "alpha": 1,
+        "gate_reduction": 4
       },
       "fouriernet": {
         "in_channel": 2,

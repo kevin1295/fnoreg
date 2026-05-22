@@ -7,7 +7,7 @@ import torch.utils.data as Data
 from torch.utils.tensorboard import SummaryWriter
 from models import *
 from losses import * 
-from fno import MyFNO, FNOReg
+from fno import MyFNO, FNOReg, GatedFNOReg
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -58,6 +58,8 @@ if model_name == 'fno':
     model = MyFNO(model_cfg).cuda()
 elif model_name == 'convfno':
     model = FNOReg(model_cfg).cuda()
+elif model_name == 'gated_convfno':
+    model = GatedFNOReg(model_cfg).cuda()
 elif model_name == 'fouriernet':
     model = FourierNet(**model_cfg).cuda()
 elif model_name == 'deepunet':

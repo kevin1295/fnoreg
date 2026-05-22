@@ -8,17 +8,19 @@ import os
 from models import *
 from tqdm import tqdm
 import time
-from fno import MyFNO, FNOReg
+from fno import MyFNO, FNOReg, GatedFNOReg
 import argparse
 import json
 from plot_utils import plotter, dft_amplitude
 import cv2
+import torchvision.transforms as transforms
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu_num', type=int,  default=0, help='GPU number')
 parser.add_argument('--config_file', type=str,  default='params.json', help='JSON config file name')
 parser.add_argument('--exp_num', type=int,  default=0, help='Experiment number')
 parser.add_argument('--ckpt_epoch', type=int,  default=-1, help='Epoch of checkpoint')
+parser.add_argument('--size', type=int, default=None, help='Resize test images to given smaller dim')
 args = parser.parse_args()
 
 params = pd.read_json(args.config_file)
@@ -48,6 +50,8 @@ if model_name == 'fno':
     model = MyFNO(model_cfg).to(device)
 elif model_name == 'convfno':
     model = FNOReg(model_cfg).to(device)
+elif model_name == 'gated_convfno':
+    model = GatedFNOReg(model_cfg).to(device)
 elif model_name == 'fouriernet':
     model = FourierNet(**model_cfg).to(device)
     model.patch_size = (160, 192)
@@ -88,9 +92,19 @@ print('Computing metrics...')
 for moving, fixed, moving_labels, fixed_labels in tqdm(test_gen, ncols=100):
     moving = moving.to(device).float()
     fixed = fixed.to(device).float()
+    moving_labels = moving_labels.to(device).float()
+    fixed_labels = fixed_labels.to(device).float()
+
+    if args.size is not None:
+        resize_size = (args.size, int(192 / 160 * args.size))
+        resize = transforms.Resize(size=resize_size)
+        resize_labels = transforms.Resize(size=resize_size, interpolation=transforms.InterpolationMode.NEAREST)
+        moving = resize(moving)
+        fixed = resize(fixed)
+        moving_labels = resize_labels(moving_labels)
+        fixed_labels = resize_labels(fixed_labels)
 
     t = time.time()
-    # f_xy, X_Y = model(moving, fixed)
     f_xy = model(moving, fixed)
     f_xy_J = torch.clone(f_xy)
     f_xy_J[:, 0, :, :] *= 159 / 2
