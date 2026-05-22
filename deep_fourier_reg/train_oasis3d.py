@@ -130,7 +130,7 @@ exp_metadata['start time'] = str(datetime.now())
 exp_metadata['model_config'] = model_cfg
 exp_metadata['model_name'] = model_name
 exp_metadata['train_config'] = train_config
-json_metadata = json.dumps(exp_metadata)
+json_metadata = json.dumps(exp_metadata, indent=4)
 with open(os.path.join(exp_folder_name, 'metadata.json'), "w") as f:
     f.write(str(json_metadata))
 

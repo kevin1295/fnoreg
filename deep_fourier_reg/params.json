@@ -107,8 +107,8 @@
       "description": "training DeepUnet2d on 0.5x resolution"
     }
   ],
-  "weights_path": "/data/fnoreg/experiments_fourier",
-  "dataset_csv_path": "/data/dataset_medium.csv",
-  "oasis_path": "/data/datasets/oasis_1_2d",
-  "oasis_folders_path": "/data/datasets/oasis_1_2d/subjects.txt"
+  "weights_path": "/home/wanwei/fnoreg/experiments_fourier",
+  "dataset_csv_path": "/home/wanwei/fnoreg/data/dataset_medium.csv",
+  "oasis_path": "/home/wanwei/fnoreg/data/datasets/oasis_1_2d",
+  "oasis_folders_path": "/home/wanwei/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
 }
