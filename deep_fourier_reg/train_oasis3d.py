@@ -8,7 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from models import *
 from models_3d import *
 from losses import * 
-from fno import MyFNO,FNOReg3d
+from fno import MyFNO, FNOReg3d, GatedFNOReg3d
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -67,6 +67,8 @@ elif model_name == 'fouriernet':
     model = FourierNet3d(**model_cfg).cuda()
 elif model_name == 'fnoreg':
     model = FNOReg3d(model_cfg).cuda()
+elif model_name == 'gated_fnoreg':
+    model = GatedFNOReg3d(model_cfg).cuda()
 elif model_name =='deepunet':
     model = DeepUNet3d(model_cfg).cuda()
 else:

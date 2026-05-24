@@ -9,7 +9,7 @@ from models import *
 from models_3d import *
 from tqdm import tqdm
 import time
-from fno import MyFNO, FNOReg3d
+from fno import MyFNO, FNOReg3d, GatedFNOReg3d
 import argparse
 import json
 import utils
@@ -51,6 +51,8 @@ elif model_name == 'fouriernet':
     model.patch_size = [160, 192, 224]
 elif model_name == 'fnoreg':
     model = FNOReg3d(model_cfg).to(device)
+elif model_name == 'gated_fnoreg':
+    model = GatedFNOReg3d(model_cfg).to(device)
 elif model_name == 'deepunet':
     model = DeepUNet3d(model_cfg).to(device)
 else:

@@ -8,7 +8,7 @@
   "patch_size": [
     256
   ],
-  "model_name": "convfno",
+  "model_name": "gated_convfno",
   "model_config": [
     {
       "ffcunet": {
@@ -119,11 +119,11 @@
   ],
   "exp_config": [
     {
-      "description": "training DeepUnet2d on 0.5x resolution"
+      "description": "training GatedConvFNO on 0.5x resolution"
     }
   ],
-  "weights_path": "/home/goldfish/fnoreg/experiments_fourier",
-  "dataset_csv_path": "/home/goldfish/fnoreg/data/dataset_medium.csv",
-  "oasis_path": "/home/goldfish/fnoreg/data/datasets/oasis_1_2d",
-  "oasis_folders_path": "/home/goldfish/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
+  "weights_path": "/home/fish/fnoreg/experiments_fourier",
+  "dataset_csv_path": "/home/fish/fnoreg/data/dataset_medium.csv",
+  "oasis_path": "/home/fish/fnoreg/data/datasets/oasis_1_2d",
+  "oasis_folders_path": "/home/fish/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
 }

@@ -30,6 +30,23 @@ class SEblock(nn.Module):
         y = self.fc(y).view(b, c, 1, 1)
         return x * y.expand_as(x)
 
+class SEblock3d(nn.Module):
+    def __init__(self, channel, reduction=4):
+        super().__init__()
+        self.avg_pool = nn.AdaptiveAvgPool3d(1)
+        self.fc = nn.Sequential(
+            nn.Linear(channel, channel // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(channel // reduction, channel, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        b, c, _, _, _ = x.size()
+        y = self.avg_pool(x).view(b, c)
+        y = self.fc(y).view(b, c, 1, 1, 1)
+        return x * y.expand_as(x)
+
 class FourierLayer2d(nn.Module):
     def __init__(self, in_ch, out_ch, n_modes, factorization=None, rank=0.5, nonlinearity=nn.GELU):
         super().__init__()
@@ -201,6 +218,21 @@ class FourierLayer3d(nn.Module):
         x_act = self.act(x_skip + x_fc)
         return x_act + x
     
+class GatedFourierLayer3d(FourierLayer3d):
+    def __init__(self, in_ch, out_ch, n_modes, factorization=None, rank=0.5,
+                 nonlinearity=nn.GELU, gate_reduction=4):
+        super().__init__(in_ch, out_ch, n_modes,
+                         factorization=factorization, rank=rank,
+                         nonlinearity=nonlinearity)
+        self.gate = SEblock3d(out_ch, reduction=gate_reduction)
+
+    def forward(self, x):
+        x_fc = self.spectral_conv(x)
+        x_fc = self.gate(x_fc)
+        x_skip = self.skip(x).to(x.device)
+        x_act = self.act(x_skip + x_fc)
+        return x_act + x
+
 class FNOReg3d(nn.Module):
     def __init__(self, model_cfg):
         super().__init__()
@@ -241,7 +273,58 @@ class FNOReg3d(nn.Module):
                       model_cfg['out_channels'],
                       kernel_size=1)
         )
-    
+
+    def forward(self, x, y):
+        x = torch.cat([x, y], 1)
+        x = self.lifting(x)
+        x = self.encoder(x)
+        x = self.fno_blocks(x)
+        x = self.decoder(x)
+        return self.projection(x)
+
+class GatedFNOReg3d(nn.Module):
+    def __init__(self, model_cfg):
+        super().__init__()
+
+        self.lifting = nn.Conv3d(model_cfg['in_channels'], model_cfg['hidden_channels'], kernel_size=1)
+
+        self.encoder = STResNetBlock3d(in_channels=model_cfg['hidden_channels'],
+                                    out_channels=model_cfg['hidden_channels'],
+                                    fu_kernel=1
+                                    )
+
+        fact = model_cfg['factorization']
+        fact = None if not fact else fact
+        gate_reduction = model_cfg.get('gate_reduction', 4)
+        self.fno_blocks = nn.Sequential(
+            *[
+                GatedFourierLayer3d(
+                    in_ch=model_cfg['hidden_channels'],
+                    out_ch=model_cfg['hidden_channels'],
+                    n_modes=model_cfg['n_modes'],
+                    factorization=fact,
+                    rank=model_cfg['rank'],
+                    gate_reduction=gate_reduction,
+                )
+                for _ in range(model_cfg['n_layers'])
+            ]
+        )
+
+        self.decoder = STResNetBlock3d(in_channels=model_cfg['hidden_channels'],
+                                    out_channels=model_cfg['hidden_channels'],
+                                    fu_kernel=1
+                                    )
+
+        self.projection = nn.Sequential(
+            nn.Conv3d(model_cfg['hidden_channels'],
+                      model_cfg['projection_channels'],
+                      kernel_size=1),
+            nn.ReLU(),
+            nn.Conv3d(model_cfg['projection_channels'],
+                      model_cfg['out_channels'],
+                      kernel_size=1)
+        )
+
     def forward(self, x, y):
         x = torch.cat([x, y], 1)
         x = self.lifting(x)
