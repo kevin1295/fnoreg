@@ -1,6 +1,6 @@
 {
-    "description": "training ConvFno2d on 1.0x resolution (Please add '--size 80')",
-    "start time": "2026-05-23 10:26:49.296242",
+    "description": "training ConvFNO on 0.5x resolution",
+    "start time": "2026-05-31 10:56:47.275528",
     "model_config": {
         "n_modes": [
             64,

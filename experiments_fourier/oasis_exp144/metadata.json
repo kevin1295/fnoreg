@@ -1,6 +1,6 @@
 {
-    "description": "training ConvFno2d on 1.0x resolution (Please add '--size 80')",
-    "start time": "2026-05-23 10:26:49.296242",
+    "description": "training GatedConvFNO on 0.5x resolution",
+    "start time": "2026-06-01 09:00:38.983360",
     "model_config": {
         "n_modes": [
             64,
@@ -13,9 +13,10 @@
         "n_layers": 12,
         "factorization": "tucker",
         "rank": 0.42,
-        "alpha": 1
+        "alpha": 1,
+        "gate_reduction": 4
     },
-    "model_name": "convfno",
+    "model_name": "gated_convfno",
     "train_config": {
         "lr": 0.0001,
         "reg_param": 0.01,

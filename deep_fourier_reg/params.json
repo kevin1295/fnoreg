@@ -122,8 +122,8 @@
       "description": "training GatedConvFNO on 0.5x resolution"
     }
   ],
-  "weights_path": "/home/fish/fnoreg/experiments_fourier",
-  "dataset_csv_path": "/home/fish/fnoreg/data/dataset_medium.csv",
-  "oasis_path": "/home/fish/fnoreg/data/datasets/oasis_1_2d",
-  "oasis_folders_path": "/home/fish/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
+  "weights_path": "/home/dong/fnoreg/experiments_fourier",
+  "dataset_csv_path": "/home/dong/fnoreg/data/dataset_medium.csv",
+  "oasis_path": "/home/dong/fnoreg/data/datasets/oasis_1_2d",
+  "oasis_folders_path": "/home/dong/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
 }

@@ -1,5 +1,5 @@
 {
-    "description": "training DeepUnet2d on 0.5x resolution",
+    "description": "training Gated ConvFno2d on 1.0x resolution",
     "start time": "2026-05-23 19:59:51.084200",
     "model_config": {
         "n_modes": [
