@@ -39,7 +39,7 @@ tensorboard --logdir experiments_fourier
 | 训练\测试 | 160 | 80 |
 | --- | --- | --- |
 | 160 | 0.774±0.037 | 0.744±0.039 |
-| 80 | | |
+| 80 | 0.771±0.039 | 0.744±0.041 |
 
 ---
 
@@ -54,7 +54,7 @@ tensorboard --logdir experiments_fourier
 | 训练\测试 | 160 | 80 |
 | --- | --- | --- |
 | 160 | 0.661±0.335 | 5.921±1.559 |
-| 80 | | |
+| 80 | 0.922±0.394 | 5.692±1.536 |
 
 ## oasis_exp141
 
@@ -305,14 +305,61 @@ Mean inference time: 0.008 seconds
 ```
 
 训练  
-`python train_oasis.py --exp_num 143 --size 80`
+`python train_oasis.py --exp_num 144 --size 80`
 
 验证  
-`python evaluate_oasis.py --exp_num 143 --size 160`  
-`python evaluate_oasis.py --exp_num 143 --size 80`
+`python evaluate_oasis.py --exp_num 144 --size 160`  
+`python evaluate_oasis.py --exp_num 144 --size 80`
 
 <details>
   <summary>实验记录</summary>
+
+```sh
+(fnoreg) dong@CudaAcc:~/fnoreg/deep_fourier_reg$ python evaluate_oasis.py --exp_num 144 --size 160
+Total Trainable Params: 22125282
+Computing metrics...
+  0%|                                                                       | 0/400 [00:00<?, ?it/s]/home/dong/miniconda3/envs/fnoreg/lib/python3.10/site-packages/torch/nn/modules/conv.py:456: UserWarning: Applied workaround for CuDNN issue, install nvrtc.so (Triggered internally at ../aten/src/ATen/native/cudnn/Conv_v8.cpp:80.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/dong/miniconda3/envs/fnoreg/lib/python3.10/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3526.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+100%|█████████████████████████████████████████████████████████████| 400/400 [00:05<00:00, 70.32it/s]
+0.00070574397 6.282244
+--- Evaluation results for gated_convfno ---
+
+Mean initial dice: 0.544
+Mean dice after registration: 0.771
+Standard deviation of dice values: 0.039
+Mean percent of folded pixels: 0.922
+Std of percent of folded pixels: 0.394
+Mean sdlogJ: 0.491
+Std sdlogJ: 0.067
+Mean inference time: 0.010 seconds
+```
+
+```sh
+(fnoreg) dong@CudaAcc:~/fnoreg/deep_fourier_reg$ python evaluate_oasis.py --exp_num 144 --size 80
+Total Trainable Params: 22125282
+Computing metrics...
+  0%|                                                                       | 0/400 [00:00<?, ?it/s]/home/dong/miniconda3/envs/fnoreg/lib/python3.10/site-packages/torchvision/transforms/functional.py:1603: UserWarning: The default value of the antialias parameter of all the resizing transforms (Resize(), RandomResizedCrop(), etc.) will change from None to True in v0.17, in order to be consistent across the PIL and Tensor backends. To suppress this warning, directly pass antialias=True (recommended, future default), antialias=None (current default, which means False for Tensors and True for PIL), or antialias=False (only works on Tensors - PIL will still use antialiasing). This also applies if you are using the inference transforms from the models weights: update the call to weights.transforms(antialias=True).
+  warnings.warn(
+/home/dong/miniconda3/envs/fnoreg/lib/python3.10/site-packages/torch/nn/modules/conv.py:456: UserWarning: Applied workaround for CuDNN issue, install nvrtc.so (Triggered internally at ../aten/src/ATen/native/cudnn/Conv_v8.cpp:80.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/dong/miniconda3/envs/fnoreg/lib/python3.10/site-packages/torch/functional.py:504: UserWarning: torch.meshgrid: in an upcoming release, it will be required to pass the indexing argument. (Triggered internally at ../aten/src/ATen/native/TensorShape.cpp:3526.)
+  return _VF.meshgrid(tensors, **kwargs)  # type: ignore[attr-defined]
+100%|█████████████████████████████████████████████████████████████| 400/400 [00:04<00:00, 85.68it/s]
+0.0025312058 6.283152
+--- Evaluation results for gated_convfno ---
+
+Mean initial dice: 0.551
+Mean dice after registration: 0.744
+Standard deviation of dice values: 0.041
+Mean percent of folded pixels: 5.692
+Std of percent of folded pixels: 1.536
+Mean sdlogJ: 0.694
+Std sdlogJ: 0.058
+Mean inference time: 0.009 seconds
+```
+
 </details>
 
 ## oasis_v_exp40
@@ -327,11 +374,11 @@ Mean inference time: 0.008 seconds
 ```
 
 训练  
-`python train_oasis3d.py --exp_num 142 --size 160`
+`python train_oasis3d.py --exp_num 40 --size 160`
 
 验证  
-`python evaluate_oasis3d.py --exp_num 142 --size 160`  
-`python evaluate_oasis3d.py --exp_num 142 --size 80`
+`python evaluate_oasis3d.py --exp_num 40 --size 160`  
+`python evaluate_oasis3d.py --exp_num 40 --size 80`
 
 ## oasis_v_exp41
 
@@ -345,8 +392,8 @@ Mean inference time: 0.008 seconds
 ```
 
 训练  
-`python train_oasis3d.py --exp_num 142 --size 160`
+`python train_oasis3d.py --exp_num 41 --size 160`
 
 验证  
-`python evaluate_oasis3d.py --exp_num 142 --size 160`  
-`python evaluate_oasis3d.py --exp_num 142 --size 80`
+`python evaluate_oasis3d.py --exp_num 41 --size 160`  
+`python evaluate_oasis3d.py --exp_num 41 --size 80`
