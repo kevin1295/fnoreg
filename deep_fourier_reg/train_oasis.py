@@ -7,7 +7,7 @@ import torch.utils.data as Data
 from torch.utils.tensorboard import SummaryWriter
 from models import *
 from losses import * 
-from fno import MyFNO, FNOReg, GatedFNOReg
+from fno import MyFNO, FNOReg, GatedFNOReg, FreqGatedFNOReg, AdaptiveFreqGatedFNOReg
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -19,16 +19,26 @@ import torchvision.transforms as transforms
 torch.manual_seed(2002)
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu_num', type=int,  default=0, help='GPU number')
-parser.add_argument('--config_file', type=str,  default='params.json', help='JSON config file name')
+parser.add_argument('--config_file', type=str,  default='params.json', help='JSON config file name or path')
 parser.add_argument('--exp_num', type=int,  default=-1, help='Exp number to retrain, optional')
 parser.add_argument('--ckpt_epoch', type=int, default=-1, help='Checkpoint epoch number')
 parser.add_argument('--size', type=int, default=160, help='Size of smaller dim of data sample, optional')
 args = parser.parse_args()
 
-params = pd.read_json(args.config_file)
-WEIGHTS_PATH = params['weights_path'][0]
-OASIS_FOLDERS_PATH = params['oasis_folders_path'][0]
-OASIS_PATH = params['oasis_path'][0]
+script_dir = os.path.dirname(__file__)
+config_path = args.config_file if os.path.isabs(args.config_file) else os.path.join(script_dir, args.config_file)
+config_path = os.path.normpath(config_path)
+params = pd.read_json(config_path)
+config_dir = os.path.dirname(config_path)
+
+def resolve_config_path(path):
+    if os.path.isabs(path):
+        return path
+    return os.path.normpath(os.path.join(config_dir, path))
+
+WEIGHTS_PATH = resolve_config_path(params['weights_path'][0])
+OASIS_FOLDERS_PATH = resolve_config_path(params['oasis_folders_path'][0])
+OASIS_PATH = resolve_config_path(params['oasis_path'][0])
 
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_num)
 device = torch.device("cuda")
@@ -53,6 +63,7 @@ else:
     model_cfg = exp_metadata['model_config']
     train_config = exp_metadata['train_config']
     exp_meta_desc = exp_metadata['description']
+    model_name = exp_metadata['model_name']
 
 if model_name == 'fno':
     model = MyFNO(model_cfg).cuda()
@@ -60,6 +71,10 @@ elif model_name == 'convfno':
     model = FNOReg(model_cfg).cuda()
 elif model_name == 'gated_convfno':
     model = GatedFNOReg(model_cfg).cuda()
+elif model_name == 'freq_gated_convfno':
+    model = FreqGatedFNOReg(model_cfg).cuda()
+elif model_name == 'adaptive_freq_gated_convfno':
+    model = AdaptiveFreqGatedFNOReg(model_cfg).cuda()
 elif model_name == 'fouriernet':
     model = FourierNet(**model_cfg).cuda()
 elif model_name == 'deepunet':

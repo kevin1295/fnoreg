@@ -8,7 +8,7 @@
   "patch_size": [
     256
   ],
-  "model_name": "gated_convfno",
+  "model_name": "adaptive_freq_gated_convfno",
   "model_config": [
     {
       "ffcunet": {
@@ -85,6 +85,34 @@
         "alpha": 1,
         "gate_reduction": 4
       },
+      "freq_gated_convfno": {
+        "n_modes": [
+          64,
+          64
+        ],
+        "in_channels": 2,
+        "out_channels": 2,
+        "hidden_channels": 32,
+        "projection_channels": 64,
+        "n_layers": 12,
+        "factorization": "tucker",
+        "rank": 0.42,
+        "alpha": 1
+      },
+      "adaptive_freq_gated_convfno": {
+        "n_modes": [
+          64,
+          64
+        ],
+        "in_channels": 2,
+        "out_channels": 2,
+        "hidden_channels": 32,
+        "projection_channels": 64,
+        "n_layers": 12,
+        "factorization": "tucker",
+        "rank": 0.42,
+        "alpha": 1
+      },
       "fouriernet": {
         "in_channel": 2,
         "start_channel": 16,
@@ -119,11 +147,11 @@
   ],
   "exp_config": [
     {
-      "description": "training GatedConvFNO on 0.5x resolution"
+      "description": "training FreqGatedConvFNO on 0.5x resolution"
     }
   ],
-  "weights_path": "/home/dong/fnoreg/experiments_fourier",
+  "weights_path": "../experiments_fourier",
   "dataset_csv_path": "/home/dong/fnoreg/data/dataset_medium.csv",
-  "oasis_path": "/home/dong/fnoreg/data/datasets/oasis_1_2d",
-  "oasis_folders_path": "/home/dong/fnoreg/data/datasets/oasis_1_2d/subjects.txt"
+  "oasis_path": "../data/datasets/oasis_1_2d",
+  "oasis_folders_path": "../data/datasets/oasis_1_2d/subjects.txt"
 }

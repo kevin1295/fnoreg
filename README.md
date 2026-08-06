@@ -1,54 +1,102 @@
-# FNOReg: Resolution-Robust Medical Image Registration Method Based on Fourier Neural Operator
+# AFG-FNOReg: Adaptive Frequency-Gated Fourier Neural Operator for Cross-Resolution Medical Image Registration
 
-This is an official implementation of paper [FNOReg: Resolution-Robust Medical Image Registration Method Based on Fourier Neural Operator](https://link.springer.com/chapter/10.1007/978-3-031-78201-5_11)
+**AFG-FNOReg** extends the [FNOReg](https://link.springer.com/chapter/10.1007/978-3-031-78201-5_11) architecture with an *adaptive frequency-gating* mechanism: each Fourier layer computes an input-dependent gate from the magnitude of its spectral output and rescales the retained Fourier modes per-sample and per-frequency, improving registration accuracy and deformation regularity when training and test resolutions differ.
+
+The base registration framework (FNO layers between FFC encoders/decoders, unsupervised loss, OASIS-1 setup) comes from the official FNOReg implementation by its original authors; this repository builds the AFG study on top of it. The AFG manuscript is in preparation.
+
+## Frequency gating in a nutshell
+
+For each Fourier layer, the spectral convolution produces complex features `z` for the upper and lower frequency blocks. The gate is derived from the mean magnitude over output channels,
+
+```
+e(x) = Mean_c | z+(x) |
+g(x) = sigmoid( a ⊙ e(x) + b )
+```
+
+and the same gate is broadcast along the channel dimension and multiplied back into both frequency blocks. Because `e(x)` depends on the current input pair, the gate is *input-adaptive* even though `a` and `b` are shared across samples. Model variants included for controlled comparison:
+
+| Config key | Class | Description |
+|---|---|---|
+| `convfno` | `FNOReg` | Baseline: standard spectral convolution, no gate |
+| `gated_convfno` | `GatedFNOReg` | SE-block gating on spectral output channels |
+| `freq_gated_convfno` | `FreqGatedFNOReg` | Static (input-independent) per-frequency gate |
+| `adaptive_freq_gated_convfno` | `AdaptiveFreqGatedFNOReg` | **AFG (this work)**: input-dependent per-frequency gate |
+
+## Experiments and key results
+
+Results below are from a **single training run** per model (see `paper_draft`/manuscript for details) on 2D OASIS-1 across four train→test resolution combinations (full = 160×192, half = 80×96). Mean Dice over the validation set:
+
+| Train → Test | Baseline FNOReg | AFG-FNOReg |
+|:---:|:---:|:---:|
+| 160 → 160 | 0.7739 | **0.7741** |
+| 160 → 80 | 0.7455 | 0.7455 |
+| 80 → 160 | 0.7654 | **0.7694** |
+| 80 → 80 | 0.7389 | **0.7438** |
+
+AFG-FNOReg shows a higher mean Dice in three settings, is on par in the fourth, and has a lower mean folding-pixel percentage in all four. Inference-time interventions on the trained AFG model indicate that frequency rescaling is functional (disabling it with an identity gate clearly degrades both Dice and regularity), but that *sample-specific* gate matching is not the main driver of the gain — freezing the mean gate performs at least as well. Diagnostics also show the learned gates saturate near 1, more so at higher input resolution.
 
 ## Installation
-We used ```python==3.10.12``` in our working environment. To install repo and all required dependencies, execute following commands.
-```
-git clone https://github.com/anac0der/fnoreg.git
+
+Python 3.10.12, PyTorch 2.1.0 + CUDA 11.8.
+
+```bash
+# uv-based environment (recommended)
+git clone <your-repo-url> fnoreg
 cd fnoreg
-python3 -m venv .
-. bin/activate
-pip install -r requirements.txt
+uv sync
 ```
 
-## Dataset downloading 
+GPU commands must go through the helper below so the CUDA 11.8 NVRTC library is visible to cuDNN:
 
-We used the preprocessed version of [OASIS-1 dataset](https://sites.wustl.edu/oasisbrains/home/oasis-1/) from [Adrian Dalca repository](https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md).
-To train our models on this dataset you need to do the following steps:
-* Download 2D and 3D data from the specified source;
-* Update paths to the datasets in corresponding configuration files (with regexp `params_*.json`, fields `oasis_path` for path to dataset folder and `oasis_folder_path` for path to file `subjects.txt`).
-
-## Launching experiments and reproducing the results
-
-After installation of all required dependencies and downloading the data, you need to download model checkpoints in order to reproduce results from our paper. It can be done by running bash scripts `./download_ckpt.sh`, `./download_ckpt_3d.sh`.
-
-
-To get further instructions about reproduction of metrics values in our paper, you can read `instructions_to_reproduce.md`.
-
-**Brief explanation of main commands** (if you want to launch your own experiments):
-
-***Training scripts***: `train_*.py`, in folder `/deep_fourier_reg` for FNO-based models, VoxelMorph-Large and Fourier-Net and in folder `/baseline_models/transmorph` for VoxelMorph, VoxelMorph-Huge and TransMorph.
-
-To launch the model training, firstly fill in the corresponding config file and then run the following command:
-```
-python3 train_*.py --gpu_num gpu_num --size size
-```
-Here `gpu_num` is number of GPU device in your system and `size` is the size of smallest dimension of input data shape (160 for full resolution and 80 for halved resolution).
-
-***Evaluation scripts***: files with pattern `evaluate_*.py`.
-After running of the experiment you can see its number in console output. To evaluate the experiment with number N, run the following command:
-```
-python3 evaluate_*.py --gpu_num gpu_num --exp_num N --ckpt_epoch ckpt_epoch
+```bash
+bash scripts/uv_gpu.sh python main.py train --gpu_num 0 --size 160
 ```
 
-Here:
+The legacy `pip install -r requirements.txt` / venv workflow remains available, and the original training/evaluation scripts under `deep_fourier_reg/` are kept for compatibility.
 
-* `gpu_num` is the same as in the training scripts;
-* `ckpt_epoch` is the number of epoch from which you want to download the checkpoint. This argument should be omitted if you want to evaluate the final model (model with weights after all epochs).
+## Usage
+
+All maintained 2D commands are launched from the repository root through `main.py`. `--size 160` is full resolution, `--size 80` half resolution.
+
+```bash
+# Train a new experiment
+bash scripts/uv_gpu.sh python main.py train --gpu_num 0 --size 160
+
+# Resume experiment 148 from epoch 70
+bash scripts/uv_gpu.sh python main.py train --gpu_num 0 --size 80 --exp_num 148 --ckpt_epoch 70
+
+# Evaluate one experiment (Dice / folding / sdlogJ + inference time)
+bash scripts/uv_gpu.sh python main.py evaluate --gpu_num 0 --exp_num 148 --size 160
+
+# Full train-resolution × test-resolution grid (baseline + AFG)
+bash scripts/uv_gpu.sh python main.py evaluate-grid --gpu_num 0
+
+# Inference-time gate interventions (normal / identity / mean / shuffled)
+bash scripts/uv_gpu.sh python main.py evaluate-gate-ablation --gpu_num 0 --exp_num 148
+
+# Visualize registration pairs and adaptive gates
+bash scripts/uv_gpu.sh python main.py visualize --gpu_num 0 --exp_num 147 --num_pairs 20
+
+# Pair-by-pair comparison of two experiments
+bash scripts/uv_gpu.sh python main.py compare --gpu_num 0
+```
+
+Model selection and training hyperparameters live in `deep_fourier_reg/params.json` (set `model_name` to one of the config keys above). Relative paths in the config are resolved from the config file location.
+
+## Dataset
+
+We use the preprocessed [OASIS-1](https://sites.wustl.edu/oasisbrains/home/oasis-1/) dataset from [Adrian Dalca's repository](https://github.com/adalca/medical-datasets/blob/master/neurite-oasis.md). After downloading the 2D (and optionally 3D) data, update the `oasis_path` / `oasis_folders_path` fields in `deep_fourier_reg/params.json`.
+
+## Reproducing the original FNOReg results
+
+This repository is a superset of the official FNOReg implementation. To reproduce the published FNOReg paper results, download the pretrained checkpoints with `./download_ckpt.sh` (2D) and `./download_ckpt3d.sh` (3D), then follow `instructions_to_reproduce.md`.
 
 ## Acknowledgements
-Hoopes et al. [Learning the Effect of Registration Hyperparameters with HyperMorph](https://arxiv.org/abs/2203.16680) - for providing preprocessed data collection;
 
-Chen, Junyu, et al. [TransMorph: Transformer for Unsupervised Medical Image Registration](https://www.sciencedirect.com/science/article/pii/S1361841522002432)  - 
- we used the source code of this paper for training VoxelMorph and TransMorph.
+- Hoopes et al. [Learning the Effect of Registration Hyperparameters with HyperMorph](https://arxiv.org/abs/2203.16680) — preprocessed data collection.
+- Chen, Junyu, et al. [TransMorph: Transformer for Unsupervised Medical Image Registration](https://www.sciencedirect.com/science/article/pii/S1361841522002432) — source code used to train the VoxelMorph and TransMorph baselines.
+- The FNOReg baseline framework is from [FNOReg: Resolution-Robust Medical Image Registration Method Based on Fourier Neural Operator](https://link.springer.com/chapter/10.1007/978-3-031-78201-5_11) (MICCAI 2024 workshop).
+
+## Citation
+
+Citation details for AFG-FNOReg will be added here once the manuscript is accepted.

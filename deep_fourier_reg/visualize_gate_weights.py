@@ -43,13 +43,15 @@ from models import FourierNet, DeepUNet2d
 
 parser = argparse.ArgumentParser(description='Visualize GatedFNOReg gate weights')
 parser.add_argument('--gpu_num', type=int, default=0, help='GPU device number')
-parser.add_argument('--config_file', type=str, default='params.json', help='JSON config file')
+parser.add_argument('--config_file', type=str, default=None, help='JSON config file')
 parser.add_argument('--exp_num', type=int, default=0, help='Experiment number')
 parser.add_argument('--ckpt_epoch', type=int, default=-1, help='Checkpoint epoch (-1 for final)')
 parser.add_argument('--size', type=int, default=None,
                     help='Resize test images to given smaller dim (None = full res)')
 parser.add_argument('--num_samples', type=int, default=-1,
                     help='Number of test pairs for gate aggregation (-1 = all)')
+parser.add_argument('--num_workers', type=int, default=2,
+                    help='Number of DataLoader workers (use 0 in restricted environments)')
 parser.add_argument('--spectral_samples', type=int, default=20,
                     help='Number of samples for spectral analysis (memory-saving)')
 parser.add_argument('--output_dir', type=str, default=None,
@@ -70,8 +72,10 @@ def load_model_and_config(exp_num, config_file, device):
     """Load model, its config, and experiment metadata.
     Mirrors the loading logic in evaluate_oasis.py lines 26-61.
     """
+    config_file = config_file or os.path.join(os.path.dirname(__file__), 'params.json')
+    config_file = os.path.abspath(config_file)
     params = pd.read_json(config_file)
-    WEIGHTS_PATH = params['weights_path'][0]
+    WEIGHTS_PATH = utils.resolve_config_path(params['weights_path'][0], config_file)
 
     exp_folder = os.path.join(WEIGHTS_PATH, f'oasis_exp{exp_num}')
     with open(os.path.join(exp_folder, 'metadata.json'), 'r') as f:
@@ -109,13 +113,15 @@ def load_model_and_config(exp_num, config_file, device):
         model.load_state_dict(ckpt['model_state_dict'])
 
     model.eval()
-    return model, model_cfg, model_name, params
+    return model, model_cfg, model_name, params, config_file
 
 
-def build_test_loader(params, max_samples=-1):
+def build_test_loader(params, config_file, max_samples=-1, num_workers=2):
     """Build DataLoader for OASIS 2D test set."""
-    OASIS_FOLDERS_PATH = params['oasis_folders_path'][0]
-    OASIS_PATH = params['oasis_path'][0]
+    OASIS_FOLDERS_PATH = utils.resolve_config_path(
+        params['oasis_folders_path'][0], config_file
+    )
+    OASIS_PATH = utils.resolve_config_path(params['oasis_path'][0], config_file)
 
     oasis_folders = []
     with open(OASIS_FOLDERS_PATH, 'r') as f:
@@ -126,7 +132,7 @@ def build_test_loader(params, max_samples=-1):
         range(213, 414), OASIS_PATH, oasis_folders
     )
     loader = Data.DataLoader(dataset=test_dataset, batch_size=1,
-                             shuffle=False, num_workers=2)
+                             shuffle=False, num_workers=num_workers)
     return loader, oasis_folders
 
 
@@ -140,26 +146,25 @@ class GateWeightCollector:
         self.n_layers = n_layers
         self.spectral_samples = spectral_samples
         self._hooks = []
-        self._gate_data = defaultdict(list)       # layer_idx -> list of [B, 32] np arrays
-        self._spectral_data = defaultdict(list)   # layer_idx -> list of [B, 32, H, W] np arrays
+        self._gate_data = defaultdict(list)
+        self._spectral_data = defaultdict(list)
         self._spectral_count = defaultdict(int)
 
     def _make_gate_hook(self, idx):
         def hook(module, input, output):
-            # output is [B, C] — sigmoid gate values from SEblock.fc Sequential
-            self._gate_data[idx].append(output.detach().cpu().float().numpy())
+            gate_values = output.detach().cpu().float().numpy()
+            self._gate_data[idx].extend(gate_values)
         return hook
 
     def _make_spectral_hook(self, idx):
         collector = self
         def hook(module, input, output):
-            # output is [B, C, H, W] from FactorizedSpectralConv2d
-            if collector._spectral_count[idx] >= collector.spectral_samples:
+            remaining = collector.spectral_samples - collector._spectral_count[idx]
+            if remaining <= 0:
                 return
-            collector._spectral_data[idx].append(
-                output.detach().cpu().float().numpy()
-            )
-            collector._spectral_count[idx] += 1
+            spectral_values = output.detach().cpu().float().numpy()[:remaining]
+            collector._spectral_data[idx].extend(spectral_values)
+            collector._spectral_count[idx] += len(spectral_values)
         return hook
 
     def register(self):
@@ -546,7 +551,7 @@ def main():
     print(f'Using device: {device}')
 
     # Load model
-    model, model_cfg, model_name, params = load_model_and_config(
+    model, model_cfg, model_name, params, config_file = load_model_and_config(
         args.exp_num, args.config_file, device
     )
     print(f'Loaded model: {model_name} (exp {args.exp_num})')
@@ -557,7 +562,12 @@ def main():
         # Still proceed — hooks simply won't fire if no SEblock exists
 
     # Build data loader
-    test_loader, _ = build_test_loader(params, max_samples=args.num_samples)
+    test_loader, _ = build_test_loader(
+        params,
+        config_file,
+        max_samples=args.num_samples,
+        num_workers=args.num_workers,
+    )
 
     # Determine resize size
     if args.size is not None:
@@ -571,7 +581,7 @@ def main():
     if args.output_dir is not None:
         out_dir = args.output_dir
     else:
-        WEIGHTS_PATH = params['weights_path'][0]
+        WEIGHTS_PATH = utils.resolve_config_path(params['weights_path'][0], config_file)
         out_dir = os.path.join(WEIGHTS_PATH, f'oasis_exp{args.exp_num}', 'gate_vis')
     _ensure_dir(out_dir)
 

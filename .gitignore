@@ -1,0 +1,52 @@
+# ---- Python / 环境 ----
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+
+# ---- 数据集（需按 README 指引自行下载 OASIS-1）----
+data/
+
+# ---- 实验产物（训练输出与评估结果，可自行复现）----
+experiments_fourier/
+baseline_models/transmorph/experiments/
+evaluations/
+visualizations/
+logs/
+events.out*
+
+# ---- 模型权重 / checkpoint ----
+*.pth
+*.pt
+
+# ---- 生成的可视化图（由 evaluate / visualize 脚本生成）----
+deep_fourier_reg/*.png
+
+# ---- 论文（未公开的中文期刊草稿与 LaTeX/图资产）----
+paper_draft.md
+paper_draft.pdf
+*.pdf
+paper-zh/
+paper-en/
+paper_figures/
+paper_figures_zh/
+
+# ---- 内部记录（不随开源发布）----
+CLAUDE.md
+AGENTS.md
+TODO.md
+experiment_goldfish.md
+
+# ---- 编辑器 / 工具 ----
+.vscode/
+.marscode/
+.claude/
+.agents/
+.DS_Store
+
+# ---- 归档与临时文件 ----
+archive/
+*.tar
+*.tar.gz
+*.bak
+*.drawio
