@@ -41,7 +41,7 @@ Python 3.10.12, PyTorch 2.1.0 + CUDA 11.8.
 
 ```bash
 # uv-based environment (recommended)
-git clone <your-repo-url> fnoreg
+git clone https://github.com/kevin1295/fnoreg.git fnoreg
 cd fnoreg
 uv sync
 ```
